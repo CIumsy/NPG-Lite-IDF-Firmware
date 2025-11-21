@@ -1,3 +1,10 @@
+# build dir
+build/*
+
+# lsp cache
+.cache/*
+# old sdkconfigs
+sdkconfig.*
 # Prerequisites
 *.d
 
