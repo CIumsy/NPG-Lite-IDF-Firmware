@@ -5,6 +5,12 @@ Build
 ```bash
 idf.py set-target esp32c6
 idf.py build
+```
+
+Flash
+```bash
+idf.py flash -p <port>
+```
 
 Monitor
 ```bash

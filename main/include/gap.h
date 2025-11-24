@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern bool device_connected;
 extern bool streaming;
 extern uint16_t conn_handle;
 extern uint16_t data_char_handle;

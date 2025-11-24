@@ -1,3 +1,27 @@
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// Copyright (c) 2025 Upside Down Labs
+// Author: Mahesh Tupe (tupemahesh@upsidedownlabs.tech)
+//
+// At Upside Down Labs, we create open-source DIY neuroscience hardware and
+// software. Our mission is to make neuroscience affordable and accessible for
+// everyone. By supporting us with your purchase, you help spread innovation and
+// open science. Thank you for being part of this journey with us!
+//
+// Reference:
+// https://github.com/espressif/esp-idf/blob/master/examples/bluetooth/ble_get_started/nimble/NimBLE_GATT_Server/main/src/gap.c
+
 #include "gap.h"
 #include "common.h"
 #include "gatt.h"
@@ -7,7 +31,6 @@ static const char *TAG = "GAP";
 static uint8_t own_addr_type;
 static uint8_t addr_val[6] = {0};
 
-bool device_connected = false;
 bool streaming = false;
 uint16_t conn_handle;
 uint16_t data_char_handle;
@@ -106,7 +129,6 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
       }
       conn_handle = event->connect.conn_handle;
       print_conn_desc(&desc);
-      device_connected = true;
       struct ble_gap_upd_params params = {.itvl_min = desc.conn_itvl,
                                           .itvl_max = desc.conn_itvl,
                                           .latency = 3,
@@ -125,7 +147,6 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
     return rc;
   case BLE_GAP_EVENT_DISCONNECT:
     ESP_LOGI(TAG, "Disconnected. Reason: %d", event->disconnect.reason);
-    device_connected = false;
     streaming = false; // Stop streaming when disconnected
     // Restart advertising
     start_advertising();
