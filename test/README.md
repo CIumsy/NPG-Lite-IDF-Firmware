@@ -53,16 +53,58 @@ pip install -r requirements.txt
 python record-log.py --outfile data.csv
 ```
 
+### View All Available Options
+
+```bash
+python record-log.py --help
+```
+
+### Command-Line Arguments
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `--outfile` | Yes | - | CSV file path to save recorded data |
+| `--duration` | No | 10 | Streaming duration in minutes |
+| `--device-address` | No | - | Specific BLE device address (skips scanning) |
+| `--device-name-prefix` | No | NPG | Device name prefix to scan for |
+
+### Usage Examples
+
+**Default (10 minutes):**
+```bash
+python record-log.py --outfile data.csv
+```
+
+**Custom duration (30 minutes):**
+```bash
+python record-log.py --outfile data.csv --duration 30
+```
+
+**Long recording (2 hours):**
+```bash
+python record-log.py --outfile data.csv --duration 120
+```
+
+**With specific device address:**
+```bash
+python record-log.py --outfile data.csv --device-address AA:BB:CC:DD:EE:FF
+```
+
+**Custom device name prefix:**
+```bash
+python record-log.py --outfile data.csv --device-name-prefix MYNPG --duration 60
+```
+
 ### What Happens When You Run It
 
-1. **Scanning**: Script scans for BLE devices with name prefix "NPG"
+1. **Scanning**: Script scans for BLE devices with name prefix "NPG" (unless specific address provided)
 2. **Connection**: Automatically connects to your NPG Lite device
 3. **Start Streaming**: Sends START command to begin data acquisition
 4. **Real-time Logging**: 
    - Prints BLE notification sizes (packet sizes received)
    - Displays batch information with elapsed time (format: `hh:mm:ss`)
    - Warns if missing samples are detected (based on counter)
-5. **Auto-Stop**: Stops after configured duration (default: **10 minutes**)
+5. **Auto-Stop**: Stops after configured duration (default: **10 minutes**, configurable via `--duration`)
 6. **Saves Files**: Creates CSV data file and summary statistics file
 
 ---
@@ -133,48 +175,12 @@ During operation, the script prints:
 
 ---
 
-## Configuring Acquisition Duration
+## Important Notes
 
-**Default duration: 10 minutes**
-
-To change the duration, edit the `STREAMING_DURATION_MINUTES` variable near the top of the script file:
-
-```python
-# ----- Streaming duration configuration -----
-STREAMING_DURATION_MINUTES = 10  # Set your desired duration here in MINUTES
-```
-
-**Examples:**
-- `STREAMING_DURATION_MINUTES = 1` → 1 minute
-- `STREAMING_DURATION_MINUTES = 30` → 30 minutes (0.5 hours)
-- `STREAMING_DURATION_MINUTES = 120` → 2 hours
-- `STREAMING_DURATION_MINUTES = 1440` → 24 hours (1 day)
-
-**Important Notes:**
 - Duration timer starts when **first data packet is received** (not when script starts)
-- No practical limit on duration - set any value you need
+- No practical limit on duration - set any value you need via `--duration`
 - Consider disk space: For example, 8 hours @ 250 Hz = ~7.2 million samples (~270 MB CSV)
 - Script auto-exits when duration completes or BLE disconnects
-
----
-
-## Advanced Options
-
-### Manual Device Address (Skip Scanning)
-
-If you know your NPG Lite's BLE address:
-
-```bash
-python record-log.py --outfile data.csv --device-address "AA:BB:CC:DD:EE:FF"
-```
-
-### Custom Device Name Prefix
-
-If your device has a custom name:
-
-```bash
-python record-log.py --outfile data.csv --device-name-prefix "MYNPG"
-```
 
 ---
 

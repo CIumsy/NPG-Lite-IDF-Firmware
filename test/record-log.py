@@ -37,8 +37,8 @@ except ImportError:
     import pytz  # Fallback for Python < 3.9
     IST = pytz.timezone("Asia/Kolkata")
 
-# ----- Streaming duration configuration -----
-STREAMING_DURATION_MINUTES = 10  # Set your desired duration here in MINUTES (e.g., 10 for 10 minutes)
+# ----- Default streaming duration -----
+DEFAULT_STREAMING_DURATION_MINUTES = 10  # Default duration in MINUTES
 
 # ----- Protocol constants (match firmware) -----
 DATA_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
@@ -117,7 +117,7 @@ class CSVWriter:
 
 # ---- NPG client: handles reassembly, batching, and CSV writes ----
 class NPGClient:
-    def __init__(self, device_address: Optional[str] = None, name_prefix: str = "NPG", csv_out: Optional[str] = None):
+    def __init__(self, device_address: Optional[str] = None, name_prefix: str = "NPG", csv_out: Optional[str] = None, duration_minutes: int = DEFAULT_STREAMING_DURATION_MINUTES):
         self.device_address = device_address
         self.name_prefix = name_prefix
         self.client: Optional[BleakClient] = None
@@ -125,6 +125,7 @@ class NPGClient:
         self.sample_accum: List[dict] = []    # accumulate parsed samples until BLOCK_COUNT
         self.csv_writer = CSVWriter(csv_out) if csv_out else None
         self.last_recv_time = None            # timestamp of last received notification
+        self.duration_minutes = duration_minutes  # Streaming duration in minutes
 
         # Statistics tracking
         self.disconnected = False             # Flag set when BLE disconnects
@@ -429,12 +430,12 @@ async def main(args):
         print("Error: --outfile is required to save CSV. Use --outfile data.csv", file=sys.stderr)
         return 1
 
-    client = NPGClient(device_address=args.device_address, name_prefix=args.device_name_prefix, csv_out=args.outfile)
+    client = NPGClient(device_address=args.device_address, name_prefix=args.device_name_prefix, csv_out=args.outfile, duration_minutes=args.duration)
 
     try:
         await client.connect_and_start()
 
-        print(f"[CONFIG] Streaming will run for {STREAMING_DURATION_MINUTES} minute(s) after data starts")
+        print(f"[CONFIG] Streaming will run for {client.duration_minutes} minute(s) after data starts")
 
         # Main loop - exit when disconnected or streaming duration expires
         while not client.disconnected:
@@ -443,8 +444,8 @@ async def main(args):
             # Check if streaming duration has elapsed (only after streaming starts)
             if client.streaming_start_time is not None:
                 elapsed = time.time() - client.streaming_start_time
-                if elapsed >= STREAMING_DURATION_MINUTES * 60:  # Convert minutes to seconds
-                    print(f"\n[INFO] Streaming duration of {STREAMING_DURATION_MINUTES} minute(s) completed")
+                if elapsed >= client.duration_minutes * 60:  # Convert minutes to seconds
+                    print(f"\n[INFO] Streaming duration of {client.duration_minutes} minute(s) completed")
                     break
 
         if client.disconnected:
@@ -466,10 +467,30 @@ async def main(args):
     return 0
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="NPG resilient BLE auto-start streamer (CSV-safe)")
-    parser.add_argument("--device-address", type=str, default=None, help="BLE address to connect to (skip scanning)")
-    parser.add_argument("--device-name-prefix", type=str, default="NPG", help="Device name prefix to scan for")
-    parser.add_argument("--outfile", type=str, default=None, help="CSV file to save batches (required)")
+    parser = argparse.ArgumentParser(
+        description="NPG-Lite BLE Data Logger - Streams 3-channel biopotential data via Bluetooth LE",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  Basic usage (10 minutes):
+    python record-log.py --outfile data.csv
+
+  Custom duration (30 minutes):
+    python record-log.py --outfile data.csv --duration 30
+
+  With specific device address:
+    python record-log.py --outfile data.csv --device-address AA:BB:CC:DD:EE:FF
+
+  Custom device name and duration:
+    python record-log.py --outfile data.csv --device-name-prefix MYNPG --duration 60
+        """)
+    parser.add_argument("--outfile", type=str, required=True, help="CSV file path to save recorded data (required)")
+    parser.add_argument("--duration", type=int, default=DEFAULT_STREAMING_DURATION_MINUTES, 
+                        help=f"Streaming duration in minutes (default: {DEFAULT_STREAMING_DURATION_MINUTES})")
+    parser.add_argument("--device-address", type=str, default=None, 
+                        help="Specific BLE device address to connect to (skips scanning)")
+    parser.add_argument("--device-name-prefix", type=str, default="NPG", 
+                        help="Device name prefix to scan for (default: NPG)")
     args = parser.parse_args()
 
     try:
